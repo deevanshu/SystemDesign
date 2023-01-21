@@ -1,0 +1,380 @@
+// IMP QUESTIONS -
+
+1: Who is Customer ( like for client , staff )
+2: Exact Module of the System Design to focus amongs various .
+3: Scale Of Customers ( to know to which db to use , CDN to use or not , Hashing etc )
+4: Consistance & Availability ( CAP Theroem , eg bank system is consistency , based on it DB choice should be taken )
+5: Sequence Of Actions/Events in Module u r designing 
+6: API's to be designed .
+7: Microservices and app flow in application
+8: Communication b/w client and services using protocols.
+9: DB Selection
+9: Scaling Of DB 
+10: Caching & Sharding ( Consistant Hashing )
+11: Health Checks by LB etc to know system state.
+12: Logging and monitor service ( Singleton design pattern for logging )  
+
+
+// IMP QUESTIONS -
+
+
+Proxy  ::-
+
+ 
+	 - Proxy server is intermediary hardware/software that sits between the client & server
+	 - They are used to filter requests, log requests, transform request by adding/ removing headers, 
+     - It's cache can serve a lot of requests.
+	 - It can coordinate requests from multiple servers & can be used to optimize request traffic. 
+	 - It can merge same request from multiple requests into one.
+	 - It collapse requests for data that is spatially close together in the storage, which'll descrease request latency.
+	 - Proxies are useful under high load situations or when we have limited caching.
+
+
+Types - a) Forward ( client side )   ;   b) Reverse ( server side ) , load balancing is it's application 
+
+Cons - Single point of failure  , Cost , Configure as sometimes imcompatible with network etc.
+
+
+Load Balancers :: -  
+
+To manage Load in ( Distributed system)  , using various algo's like -  Random  , Round - robin , Least Connection etc .
+
+
+Load Balancing-
+
+  - It helps to distribute load across multiple resources. 
+  - It also keep track of status of all the resources while distributing requests. If a server is not available, it stops sending traffic. 
+  - LB can be added at three places:
+  - Between user & web-server
+  - Between web-servers & internal servers (Application servers or cache servers)
+  - Between Internal platform layer & DB
+  -	To utilize full scalability & redundancy , add 3 LB
+	Client -> web server ;  Web server -> App server / Cache Server ;  App server -> DB Server
+
+Types of load balancers:
+
+   Hardware LB: 
+                They are hardware which works as LB, but are very expensive. 
+                Big companies use them only as first point of contact & use other machanism for load-balancing.
+				
+   Software Load balancers: 
+                Software-based load balancers may be installed directly onto a server, or they may be purchased as load balancer as a service (LBaaS). 
+				With LBaaS, the service provider is responsible for installing, configuring, and managing the load balancing software. The software-based 
+				load balancer may be located on-premises or off .
+				It's hybrid approach. HAProxy is popular open source software LB.
+				Every client request on this port (where HAProxy is running) will be received by proxy & then passed to the backend service in efficient way. 
+				HAProxy manages health check & will remove or add machines to those pools.
+				We should start with these.
+				
+				
+Hashing  :: - 
+	    - Hashing is generating a value or values from a string of text using a mathematical function called Hash Function
+		- Hashing is one way to enable security during the process of message transmission when the message is intended for a particular recipient only.
+		- A formula generates the hash, which helps to protect the security of the transmission against tampering.	
+		 Can search in O(1)
+		- Hashing is done by Hash Table & Hash function
+
+		- H(x) = x mod 10
+		i.e Hash table consist of 0 to 9
+		- 21, 56, 72, 39, 48, 96 will be stored as per x mod 10
+		- 56 & 96 will occur in same cell so they'll be override
+
+		- What is good function: 
+		 - Easy to compute
+		 - Even distribution
+		 - Less collision	
+
+How to resolve collision (Simple collision handling):
+
+1: open hashing   - We can have sepearate chaining when more than 1 item is in cell. New item will be at the front. 
+				    By this way we can insert all items, but searching & deletion will take time.	
+2: Closed hashing - In this, data goes inside the table, no need to make linked list
+				  - By linear probing
+				  - If x mod 10 is already present, do on (x + 1) mod 10, if it's present too, do on (x + 2) mod 10
+				  - Issue is there'll block of data in chucks, not evenly distributed
+				  - For it, quadratic probing
+				  - In this H(x) = (Hash(x) + f(i))
+				  - f(i) = i ^ 2;	
+
+But when Servers are increased/decreased almost all keys are need to be re mapped . Solu is consistent hashing 
+
+Consistent Hashing  ::-
+			Very useful strategy for distributed caching & outs minimizes re organization of data when we are scaling up / dawn.
+			only k/n keys needs to be remapped.
+			k  =  total number of keys
+			n = number of servers
+			
+			How it works ?
+			Typical hash function suppose outputs in [ 0 . 2567 ]
+			In consistent hashing ,
+			imagine all of these integers are placed on a hashed ring (circle ).
+			
+			imagine all of these integers are placed on a ring .
+
+              
+			1) Given a list of servers( A , B , C ) hash them to integers in the range .
+			2) Map key to a serum :
+				a) Hash it to single integer
+				b) Mone CLK(or anti clockwise ) wise until you find Laura
+				c) map key to that server .
+            3) Adding a new server D ( b/w B and C ) will result in morning the key - 2'to 'D
+               Removing server IA will result in morning the key-1 to II
+			   
+			Consider real world scenario where data →randomly distributed using above approach can cause unbalanced cactus .
+			How to handle this issue ? Sol -> Virtual Replica
+
+						
+			Instead of mapping each node to a single point we map it to multiply points .
+			( more number of replicas more equal distribution good load balancing )	
+
+
+            vnodes are different from replicas. vnodes are just the labels given to a physical node in the consistent hash ring in order to maintain
+			more even distribution of data. While replica is a copy of the data stored by the adjacent servers which come into play when that server 
+			goes down or is removed from the ring. For eg. if node1 has 40 virtual nodes, then all the data whose hash values fall in the range of the
+			vnodes will be stored and served by node1. Also, node1 can have 4 replicas, which means 4 adjacent servers will be storing copy of the data
+			of node1 and will serve them when node1 goes down.
+            generally replicas are used for fault tolerance as a backup server .
+			
+			
+			Horizontal Scaling        | Vertical Sacling
+                                      |
+1: More M/c are added		          | 1: More capacity to same Machine
+2: LBalncer required                  | 2: LB not required					   
+3: No Single Pt Of failure.(Resilient)| 3: Single point of failure
+4: Network calls (RPC)			      | 4: No RPC , Inter process communicatn.
+5: Might have data inconsistancy(as to| 5: No Data inconsistancy as single server is there . 
+   fetch data b/w diff  servers)	  |  
+6: No Hardware limit				  | 6: Hardware Limit.
+							          
+
+
+Fault vs Failure :: -  Fault is the cause and Failure is the effect of fault . 
+                       eg. in Distributed System - Hardware fault because of which user cant access so it's failure.
+					   replication can be one solution of being fault tolerance . 
+					   
+					   Types Of Fault -> 1: Transient fault ( Occurs for very small duratn ,  hard to detect) 
+                    					 2: Permanent fault ( continues untill fixed , easily detected )
+
+							   
+Data Sharding:: - Splitting up DB table across multiple machines so achieve  manageability , performance , availability .
+
+
+                  Physical shard & Logical shard - Physical M/c which can have different partition , each partition is called is called logical shard .
+				  
+                  After a certain scale paint ,it is cheaper and more feasible to scale horizontally by adding more machines instead of vertical 
+				  scaling by adding more power to existing machine.
+				  
+				  Methods of Partitioning/Sharding : 
+				  1-> Horizontal Partitioning  :- In this we put different rows into different table(db), i.e. 
+				                                  rows can be based on location with zip codes, this is also range based sharding.
+						Disadvantage :  If the value of the range not chosen carefully , then leads to unbalanced servers .
+						
+			       2-> Vertical Partitioning  :- Feature wise distribution of data. example - Instagram - ( Server 1 stores user info. , Server 2 stores Followers , Server 3 stores Photos)
+				                                 It's more straight forward and easy to implement .
+					    Disadvantage  : Can't handle if to much request regarding a particular feature comes .		
+
+				Sharding Types/ Stratorgies :-
+						
+				1: Key Based  - ( Key(called as shard key , should be static not changing) is passed into Hashing Function and data is stored in the result of hashing function )
+				   Adv.   :  Data is evenly distributed.
+				   Disadv :  More/Less shards/servers are added/removed then hash function needs to be changed , but here we can use consistant hashing .
+
+				2: Range based - ( When range is there in queries like logging , e - coomerce etc.)
+				   Adv.   : Easily add/remove servers.
+				   Disadv : More load on 1 shard as one range can have more load.						   
+				
+				3: Directory based - ( A loosely coupled approach to work around issues mentioned in above two partitioning .Here we Create lookup service , based on which we decide to
+				                       go to which shard .)
+					Adv.   :Even distribution , Easily add/remove servers
+                    Disadv : Lookup table which increases overhead.
+                             Lookup table may go down .
+							 
+                                     eg.  Zones 	|	Shard							  
+										  A			|    1
+										  B			|    2
+										  C			|    3
+										  D			|    4
+													
+													
+Message Queue :: -     Async Comm. -> Done through queues with some delays , it helps in Effectively managing requests in large scale distributed system .
+                       To achieve high performance & availability system needs to be asynchronous .	ex. text mess , emails .
+                       Sync  Comm  -> Info. is shared in real time ex. phone call. 
+
+					   Message queues are middleware used by diff. parts of a system( say producers & consumers ) to communicate or process operations asynchronously.
+					   ex. Kafka , Rabbit Mq.
+					   
+					                  | ---- Ordered Queue  ( FIFO ) where mess are consumed in order and if mess consumptn fails , consumptn gets stopped  
+Factors of Message Queue  - Ordering  | 
+                                      |	---- Unordered Queue where mess order doesn't matters , if mess consumptn fails , then next mess are consumed and failed mess are put
+									         in Dead Letter Queue ( DLQ )
+											 
+							Consumption | ----  One To One ( Producer consumer problem ) ; producer puts mess and consumer consumes mess.			 
+                                        |
+										| ----  One To Many ( Publisher subscriber problem ) 
+										
+( Helps In decoupling the components )
+Publisher Subscriber Problem ::- More subscribers (services subscribed by subs acc. to their work  , single consumer 
+
+                                                    SUB1
+                          | - - - -|               /
+Publisher   ---- INPUT----|Message |---OUTPUT ---- -- SUB2
+                 Chnnel   |Broker  | Channel       \
+                          |--------|				SUB3  
+					   
+Message Broker helps in modifying the format which publisher has shared the mess. or sometimes add more info. and then send it to subs. , it can also help in 
+dividing the i/p messages in diff. topics  where each topic can be taken up by some subs as all subs need not to be notified about all the messages . 	
+			
+Ordering is not defined here in pub - sub , incase required can use priority queue etc.
+Consumers ( subscriber )are large 	and consumers are less.
+
+ex. E-commerce invoice for last 6 months , paying out sellers upon order getting placed , sending malies to users ,
+
+Pub Sub patterns provide gud decoupling  , balacing load by increasing subs  .				 
+					   				  
+Indexes::-
+
+ - Very useful in database to improve the speed of data retrieval.
+ - Index makes trade-off of increased storage overhead, slower writes for the benefit of faster read.
+ - Index is a data structure of table of contents that points us to the location where actual data lives, so when we create an index on a 
+   column of a table, we store that column & a pointer to the whole row in the index.
+ - Indexing is mainly done in two ways:
+ - Ordered Indexing: Column is sorted as per ascending order
+ - Hash Indexing: Indexing is as per Hash function & Hash table
+ - Useful when more read operations & disadvantage of overhead when writes are more .
+  
+  
+Relational  vs NON Relational ::- 
+
+Relational  ->  1: structured 2: Predefined schema 3: Data in rows & columns 4: Row contains One Entity Info & column contains Separate data points.
+ex. Oracle , Mysql , Postgres etc. 5: Uses Sql 6: Mostly Vertical Scalable
+
+
+Non Relational -> 1: Unstructured 2: distributed  3: Dynamic schema 4: Key - value pairs(Dynamo,Redis)(value can be string/int/json but can't query on value ) , document db ->It's group of collections
+( collections==table and docs==rows , also like key nd value , value is json documnt , here can search on value)(MongoDB, CouchDB ) , Column Db's ( Midway of relational & document db , group of
+column and value pair belong to 1 key ,diff keys can have diff column grups , used when there are heavy reades like streaming data etc  ex. Cassandra , Hbase  ) ,  graph db
+(Neo4J)etc. 6: No Sql required , 7: Mostly Horizontal Scalable
+
+Most of NoSQL sacrifice ACID compliance for performance & scalibility.
+  - When storing large volume of data with rapid development with no structure fixed.
+  - Cloud based commputing & storage. They are designed to be scaled across multiple data servers  
+
+Elastic Search  ::- https://www.knowi.com/blog/what-is-elastic-search/
+
+Monolithic Architecture:: -
+
+- In layman terms, you could say, it's like a big container wherein all the software components of an application are asembled together & tightly coupled.
+- Issues with it:
+- Agility: In case of adding new services, you need to chnage whole architecture or platform
+- Scalability
+- Fault tolerance: In case of something down, whole system is down
+- Single framework
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+Microservices Architecture:: -
+
+- Monolithic application is decomposed to different component
+- Different services for different component & interact with each other through RESTful
+- Microservices: one for search, other for notification, index, etc
+- Each have their LB, cache, indexes, REST api
+- Benefits: Single capabilities, Independant as Product, Decouping, Continious delivery, Componentisation, Autonomy, Scalibility
+
+- Use-Case: Uber
+ - Earlier it was monolithic, all were in single framework.
+ - Then chnaged to Microservices
+ - API gateway was for all component & API gateway redirect to different component. 
+ - Search microservices has more servers than for other services
+- Best Practics: 
+ - Seperate data stores
+ - Seperate as per features
+ - Server which are stateless
+ 
+ 
+HTTP :  HTTPS ::-
+
+When you enter http:// in address bar, it tells browser to connect over Http.
+- Http uses TCP generally over port 80 to send & receive data packets over the web.
+
+How Https Works: 
+- Http over TLS or HTTP over SSL
+- When you enter https://, it tells browser to connect over HTTPS. Generally sites running on https will have a redirect in place so even if you place http, it'll redirect to deliver over HTTPS
+- Https also used TCP to send/receive data, but it does so over port 443, within a connection encrypted by TLS (Transport Layer Security) 
+
+
+How Https is Secure: 
+- Https originally used SSL protocol, which eventually evolved into TLS
+- Https transmit its data securely using an encrypted connection.
+- Basically it uses a public key, which is then decrypted on the recipient side. The public key is deployed on the server, and included in what you know as an SSL certificate. The certificates are 
+cryptographically signed by a Certified authority, and each browser has a list of CAs it implicitly trust. Any certificate signed by a CA in trusted list is given a green padlock in browsers address bar. 
+-Companies like 'let's encrypt' have process of issuing SSL certificates free. 
+
+Problems with Http: 
+- Session Hijacking
+- Man-in-the-middle attack
+
+
+CACHE ::-  ( Reddis , Eh cache )
+
+- Caching works on locality of reference principle: recently requested data is likely to be requested again.
+- It's like short-term memory which has limited space but is faster & contains most recently accessed items. ( SSD in system is also type of cache , that's why it's faster )
+- Cache can be used in almost every layer: Hardware, OS, Web browsers, web application, but are often found nearest to the front end.
+
+Types of cache:  
+
+1: Application server cache - Placing a cache on request layer node enables the local storage of response data. When a request is made, node will quickly return the cached data, 
+                              if exists. If not it'll query from disk. But when you've many nodes with load balancer, it randomely distribute across the nodes, the same request 
+							  will go to different noodes, thus increasing cache misses . Two choices are to overcome this: distribute cache & global cache.
+
+ 2: Distribute Cache - In it, each of its nodes own part of cached data. 
+                       The cache is divided up using a consitent hashing function, such that if a request node is looking for a certain piece of data, it can quickly know where
+					   to look within distributed cache to check if data is available.Easily we can increase the cache space just by adding nodes to the request pool
+
+ 3: Global Cache    - In this, all nodes use the same single cache space. Each of the request nodes queries the cache in the same way it would a local one.
+				      There can two type of global cache:
+					  First, when a cached response not found in cache, cache itself becomes responsible for retrieving the missing peice of data. 
+					  Second, it's the responsibility of request nodes to retrieve any data that is not found. It can be used when low cache hit % would cause the cache 
+					  buffer with cache misses. In this situation, it helps to have a large % of data set in cache.
+
+ 4: CDN             - It's Content Distribution Network for serving large amount of static media which is common to all. 
+				      First request ask the CDN for data, if it's not having it CDN will query the back-end servers & then cache it locally
+				      If your system is not that big for CDN, you can serve static media from a seperate subdomain using a lightweight HTTP server like Nginx
+
+Cache Eviction strategies -> 1: FIFO 2: LRU 3: LFU( frequently )
+
+
+Cache Invalidation strategies -> When data is modified in DB, it should be invalidated in the cache . 
+                                 Methods -  1: Keeping expiry date (TTL , time to live) 2: Removing value from cache and updating value through application code . 
+
+Cache Design Patterns ->   
+
+1: Cache Aside Pattern  - Cache is never talking DB it sits aside and only to application , applicatn checks first in cache if present serve it , if not then fetches from 
+                          db puts in cache and return bck value. 
+Adv    : Application  can server data if cache/db goes down , supports heavy reads. 
+Disadv : When new value comes then how to update value. 
+
+
+2: Read Through Pattern / Write Through Pattern - Cache sits b/w server & Db . When 1st request come then cache miss ,
+                                                  value fetched by cache from db then loaded into it and given to application.
+
+Adv      : Good for read heavy workloads , application never talks to DB.
+Disadv   : Cache failure system failure , extra layer of 1st writing to cache then , cache writing to DB .
+
+
+3: Write Around Pattern  - Cache sits b/w server & Db , similar to Read/Write Through pattern , only diff is for writing application directly writes to Db 
+                           rather than cache.
+
+
+
+4: Write Back Pattern   - Cache sits b/w server & Db . Reads from cache and writes to db are done by cache only but in a batch and after some time , 
+                          so more efficient than read/write through.
+						  
+						  
+						  
+What happens when we type google.com ->	  https://medium.com/@maneesha.wijesinghe1/what-happens-when-you-type-an-url-in-the-browser-and-press-enter-bb0aa2449c1a 
+
+TCP , IP ,HTTP  -> https://www.quora.com/Does-HTTP-use-TCP-or-UDP-Why
+
+
+SOLID PRINCIPLES -> https://www.youtube.com/watch?v=XI7zep97c-Y
+
+Authorization & JWT Tokens java brains -> UTube
