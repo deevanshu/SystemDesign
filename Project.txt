@@ -1,0 +1,35 @@
+Project Overview :
+
+-> It's a healthcare project named CDR(clinical Data Repository) . 
+-> It's a product developed by Nextgen basically it's an HIE(Health Information Exchange ) tool .
+-> used by various medical agencies like hospitals ,doctors ,patients etc as per their need.
+-> For hospitals whenever any patient goes to hospital they(hospital) verify the whether the patient is already registered with HIE .
+-> If Not then they create that patient's data and If yes then they fetch the patient's data.
+-> Communication/transfer of data isn't done with plain text but with set of international standards used to transfer and share data between various healthcare providers like HL7(Health Level 7) , CDA ,CCDA basically these are standard message formats used for comm. across the countries.
+-> There are various source system via which we recive the mess most of them are processed through mirth connect ( which is a nextgen internal prod  , seprate teams are handling that)
+-> We can also configure anther HIE system transfer the mess using Rest/Soap endpoints.
+-> Traffic around 200/300 mess/min.
+-> For each record(Patient data) we maintain audit(event and event type ) in case there is any change in patient data.
+
+       
+ Spring Mvc Framework .
+  
+ MConnect -> Load Balancer( Round Roin Schedullling) -> redirect to any server of  Results CDR ( 5 ) -> Once mess recieved in CDR request redirected to Appropriate controller -> data saved/fetched using hibernate 
+			 
+ After DML operation -> Creation/Updation event sent into Kafka Topic named as delivery eveluation -> Listeners are attached to this topic to confirm whether acknow needs to send out or not .
+ 
+ Accordingly Ackn are sent.
+ 
+ 
+ 	 
+
+AIM : electronic health records (EHRs) aims to improve patient care, reduce the cost of care, and promote a healthier population
+
+
+swag wala(5) , blind 75(1) , eclipse(1) , top 100 interview leetcode(1) = 8Days 
+system design.txt(.25) , low level questions eclipse(1) , high level tech grunth(1) , jenkins(.25) , google doc(.25) , web crawler(.25) , key value column db(.5) , system design alex wu(1.5) = 5Days 
+Project.txt(.25) = .25Days
+Spring Core(.5) - mvc(.5) - boot(.5) ,hibernete(.5) , rest api(.5), exception hndling(.25) , multithreading (executor frmwrk)(.5) ,java8 (1) =  4Days
+OS(.5) / DBMS(1) / NETWRKNG(.5) = 2Days
+
+Total = 20Days
