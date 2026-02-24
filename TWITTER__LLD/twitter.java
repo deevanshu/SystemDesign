@@ -1,6 +1,5 @@
 package TWITTER__LLD;
 import java.util.*;
-
 /* 
  CLASSES ->
  
@@ -11,7 +10,6 @@ Tweet: Represents each post (tweet), holds author, content, timestamp, likes, an
 Feed : Generates and stores each user’s timeline, fetching tweets from users they follow.
 
 Notification: Real-time alerts for likes, comments, follows, and mentions.
-
 
 
 UML/Relationship Overview ->
@@ -78,9 +76,21 @@ class FeedService {
     
     List<Tweet> generateFeed(User user, int limit);
 }
+ 
+userTweets map: ->
+{
+	  1: [Tweet(101), Tweet(103)]
+	  2: [Tweet(102)]
+	  3: [Tweet(104)]
+}
 
- */
+followees map: ->
+{
+	  1: [2,3]    // User 1 follows 2 and 3
+	  2: [3]     //  User 2 follows 3
+}
 
+*/  
 public class twitter {
 
     private static int timeStamp = 0;
@@ -89,9 +99,9 @@ public class twitter {
     Follower: The user who follows someone. They see the followee’s posts in their feed.
     Followee: The user who is being followed. Their posts appear in the follower’s feed.    */
     
-    private Map<Integer, Set<Integer>> followees;  // User -> set of followees
+    private Map<Integer, HashSet<Integer>> followees;  // UserId -> set of followees(they follow)
 
-    private Map<Integer, List<Tweet>> userTweets; // User -> list of tweets by user 
+    private Map<Integer, List<Tweet>> userTweets; // UserId -> list of tweets by user 
 
     public twitter() {
         followees  = new HashMap<>();
@@ -105,16 +115,17 @@ public class twitter {
         String text;
         String userId;
         
-        Tweet(int tweetId, int time) { // For Simplicity take these2 only in constructor
+        Tweet(int tweetId, int time, String text) { // For Simplicity take these 3 only in constructor
             this.tweetId = tweetId;
             this.time = time;
+            this.text = text;
         }
     }
 
     // Post a new tweet
     public void postTweet(int userId, int tweetId) {
         userTweets.putIfAbsent(userId, new ArrayList<>());
-        userTweets.get(userId).add(new Tweet(tweetId, timeStamp++));  
+        userTweets.get(userId).add(new Tweet(tweetId, timeStamp++,"tweet"));   // returns reference , no need to put back
     }
 
     // Follow
@@ -138,7 +149,7 @@ public class twitter {
 
     // Get news feed for a user(most recent 10)
     public List<Integer> getNewsFeed(int userId) {
-        PriorityQueue<Tweet> maxHeap = new PriorityQueue<>((a, b) -> b.time - a.time);
+        PriorityQueue<Tweet> maxHeap = new PriorityQueue<>((a, b) -> b.time - a.time); // Sort tweets by desc order of time
 
         // Add user's own tweets
         if (userTweets.containsKey(userId)) {
@@ -148,8 +159,8 @@ public class twitter {
         // Add followees’ tweets
         if (followees.containsKey(userId)) { 
             for (int followee : followees.get(userId)) { // getting all the followee's of the user
-                if (userTweets.containsKey(followee)) {
-                    maxHeap.addAll(userTweets.get(followee));
+                if (userTweets.containsKey(followee)) { // getting followee's tweet
+                    maxHeap.addAll(userTweets.get(followee)); // adding followee's tweet
                 }
             }
         }
@@ -158,7 +169,7 @@ public class twitter {
         List<Integer> feed = new ArrayList<>();
         int count = 0;
         while (!maxHeap.isEmpty() && count < 10) {
-            feed.add(maxHeap.poll().id);
+            feed.add(maxHeap.poll().tweetId);
             count++;
         }
         return feed;
@@ -191,7 +202,7 @@ public class twitter {
 
         followees map: ->
         {
-        	  1: [2, 3]  // User 1 follows 2 and 3
+        	  1: [2,3]  // User 1 follows 2 and 3
         	  2: [3]     // User 2 follows 3
         }
 
