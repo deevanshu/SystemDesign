@@ -1,0 +1,202 @@
+package SubscriptionModel;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.*;
+
+
+//		createSubscription()	Adds a new milk subscription
+//		pauseSubscription() / resumeSubscription()	Temporarily stop/resume milk delivery
+//		cancelSubscription()	Ends subscription
+//		runDailyDelivery()  	Scheduled daily delivery job
+//		getAllActiveSubscriptions()	Used by scheduler to filter subscribers
+
+//  FLow: 1. User Signs Up / Registers  -> 2. Create a Milk Subscription  -> 3. Daily Job Trigger (Scheduler)  -> 4. Pause/Resume/Cancel/Edit/ViewAll a Subscription 
+class User {
+	Long userId;
+	String name;
+	String email;
+	String phone;
+	Address address;
+	List<MilkSubscription> subscriptions;
+}
+class Address {
+	String houseNo;
+	String street;
+	String city;
+	String pincode;
+}
+class Product {
+	Long productId;
+	String name; // e.g., "Cow Milk", "Buffalo Milk"
+	String unit;  // Litres
+	Double pricePerUnit;
+	Double fatContent;
+}
+enum SubscriptionStatus {
+	ACTIVE, PAUSED, CANCELLED
+}
+enum Frequency {
+	DAILY, ALTERNATE_DAY, WEEKLY
+}
+enum PaymentType {
+	PREPAID, POSTPAID
+}
+enum PaymentStatus {
+	PENDING, PAID, FAILED
+}
+class DeliverySchedule {
+	LocalDate deliveryDate;
+	boolean isDelivered;
+	String deliveryUserId;
+	String deliveryNote;
+}
+class PaymentPlan {
+	Long planId;
+	PaymentType type; // PREPAID or POSTPAID
+	Double totalAmount;
+	PaymentStatus status; // Pending , pid
+	LocalDate dueDate;
+}
+// Model class for a Milk Subscription
+class MilkSubscription {
+	private UUID id;
+	private String customerName;
+	private String address;
+	private int quantityInLitres;
+	private LocalDate startDate;
+	private SubscriptionStatus status;
+	private Frequency frequency; 
+
+	public MilkSubscription(String customerName, String address, int quantityInLitres, Frequency frequency) {
+		this.id = UUID.randomUUID();
+		this.customerName = customerName;
+		this.address = address;
+		this.quantityInLitres = quantityInLitres;
+		this.startDate = LocalDate.now(); // gives today's date 
+		this.status = SubscriptionStatus.ACTIVE; // mark as active
+		this.frequency = frequency;
+	}
+
+	public UUID getId() { return id; }
+	public String getCustomerName() { return customerName; }
+	public String getAddress() { return address; }
+	public int getQuantityInLitres() { return quantityInLitres; }
+	public LocalDate getStartDate() { return startDate; }
+	public SubscriptionStatus getStatus() { return status; }
+	public Frequency getFrequency() { return frequency; }
+
+	public void pause() { this.status = SubscriptionStatus.PAUSED; }
+	public void resume() { this.status = SubscriptionStatus.ACTIVE; }
+	public void cancel() { this.status = SubscriptionStatus.CANCELLED; }
+
+}
+// Service class to manage subscriptions
+class SubscriptionService {
+	private Map<UUID, MilkSubscription> subscriptions = new HashMap<>();
+
+	public MilkSubscription createSubscription(String name, String address, int qty,Frequency frequency ) {
+		MilkSubscription sub = new MilkSubscription(name, address, qty , frequency);
+		subscriptions.put(sub.getId(), sub);
+		return sub;
+	}
+	public void pauseSubscription(UUID id) {
+		if (subscriptions.containsKey(id)) {
+			subscriptions.get(id).pause();
+		}
+	}
+	public void resumeSubscription(UUID id) {
+		if (subscriptions.containsKey(id)) {
+			subscriptions.get(id).resume();
+		}
+	}
+	public void cancelSubscription(UUID id) {
+		if (subscriptions.containsKey(id)) {
+			subscriptions.get(id).cancel();
+		}
+	}
+
+	public List<MilkSubscription> getAllActiveSubscriptions() {
+		List<MilkSubscription> active = new ArrayList<>();
+		for (MilkSubscription sub : subscriptions.values()) {
+			if (sub.getStatus() == SubscriptionStatus.ACTIVE) {
+				active.add(sub);
+			}
+		}
+		return active;
+	}
+	public void runDailyDelivery() {
+		System.out.println("\n🛒 Delivering milk to active subscribers: " + LocalDate.now());
+
+		LocalDate today = LocalDate.now();
+		for (MilkSubscription sub : getAllActiveSubscriptions()) {
+			if (shouldDeliverToday(sub, today)) {
+				System.out.println("Delivered " + sub.getQuantityInLitres() + "L to " + sub.getCustomerName());
+			}
+		}
+	}
+	private boolean shouldDeliverToday(MilkSubscription sub, LocalDate today) {
+		LocalDate start = sub.getStartDate();
+		switch (sub.getFrequency()) {
+		case DAILY:
+			return true;
+		case ALTERNATE_DAY:
+			return (ChronoUnit.DAYS.between(start, today) % 2 == 0); // calculates days b/w start date and today and then / by 2 like
+			//  started on 20 , so delivr on 20 ,22 , 24.... today is 26 then 20 -26 = 6%2 = 0 , deliver today
+		case WEEKLY:
+			return start.getDayOfWeek() == today.getDayOfWeek(); // every 7 days, same weekday
+		default:
+			return false;
+		}
+	}
+	public void printAllSubscriptions() {
+		for (MilkSubscription sub : subscriptions.values()) {
+			System.out.println(sub);
+		}
+	}
+}
+
+// Driver class to simulate the system with scheduler
+public class subscription {
+	public static void main(String[] args) {
+		SubscriptionService service = new SubscriptionService();
+
+		MilkSubscription s1 = service.createSubscription("Alice", "Street 123", 2 , Frequency.DAILY);
+		MilkSubscription s2 = service.createSubscription("Bob", "Avenue 45", 3 , Frequency.ALTERNATE_DAY);
+		MilkSubscription s3 = service.createSubscription("Charlie", "Park Lane", 1 , Frequency.WEEKLY);
+
+		service.pauseSubscription(s3.getId());
+
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+		scheduler.scheduleAtFixedRate(() -> service.runDailyDelivery(), 0, 24, TimeUnit.HOURS);// (Runnable command,initialDelay,period,TimeUnit unit);
+
+		//   long delayUntil5AM = getInitialDelayFor5AM();
+		//     scheduler.scheduleAtFixedRate(() -> service.runDailyDelivery(), delayUntil5AM, 24, TimeUnit.HOURS);
+
+		//        public static long getInitialDelayFor5AM() {
+		//            LocalDateTime now = LocalDateTime.now();
+		//            LocalDateTime nextRun = now.withHour(5).withMinute(0).withSecond(0).withNano(0);
+		//
+		//            if (now.compareTo(nextRun) >= 0) {
+		//                // If it's already past 5 AM today, schedule for tomorrow
+		//                nextRun = nextRun.plusDays(1);
+		//            }
+		//
+		//            Duration duration = Duration.between(now, nextRun);
+		//            return duration.toMillis();
+		//        }
+                // @EnableScheduling
+		//        @Scheduled(cron = "0 0 5 * * ?")  // Every day at 5:00 AM for real words in spring boot using @EnableScheduling.
+		//        public void runDeliveryJob() {
+		//            deliveryService.runDailyDelivery();
+		//        }
+		//        This can be configured in Spring Boot using @EnableScheduling.
+		try {
+			Thread.sleep(20000); // simulate for 20 seconds
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		scheduler.shutdown();
+	}
+}
