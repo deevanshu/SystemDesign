@@ -1,36 +1,37 @@
-package com.systemdesign.VendingMachine;
+package VendingMachine;
 
 public class Inventory {
 
-	ItemShelf[] inventory = null;
+	ItemShelf[] itemShelf = null;
 
 	Inventory(int itemCount) {
-		inventory = new ItemShelf[itemCount];
+		itemShelf = new ItemShelf[itemCount];
 		initialEmptyInventory();
 	}
 
-	public ItemShelf[] getInventory() {
-		return inventory;
+	public ItemShelf[] getItemShelf() {
+		return itemShelf;
 	}
 
-	public void setInventory(ItemShelf[] inventory) {
-		this.inventory = inventory;
+	public void setitemShelf(ItemShelf[] inventory) {
+		this.itemShelf = inventory;
 	}
 
+	
 	public void initialEmptyInventory() {
 		int startCode = 101;
-		for (int i = 0; i < inventory.length; i++) {
+		for (int i = 0; i < itemShelf.length; i++) {
 			ItemShelf space = new ItemShelf();
 			space.setCode(startCode);
 			space.setSoldOut(false);
-			inventory[i]= space;
+			itemShelf[i]= space;
 			startCode++;
 		}
 	}
 
 	public void addItem(Item item, int codeNumber) throws Exception {
 
-		for (ItemShelf itemShelf : inventory) {
+		for (ItemShelf itemShelf : itemShelf) {
 			if (itemShelf.code == codeNumber) {
 				if (itemShelf.isSoldOut()) {
 					itemShelf.item = item;
@@ -44,7 +45,7 @@ public class Inventory {
 
 	public Item getItem(int codeNumber) throws Exception {
 
-		for (ItemShelf itemShelf : inventory) {
+		for (ItemShelf itemShelf : itemShelf) {
 			if (itemShelf.code == codeNumber) {
 				if (itemShelf.isSoldOut()) {
 					throw new Exception("item already sold out");
@@ -59,7 +60,7 @@ public class Inventory {
 	}
 
 	public void updateSoldOutItem(int codeNumber){
-		for (ItemShelf itemShelf : inventory) {
+		for (ItemShelf itemShelf : itemShelf) {
 			if (itemShelf.code == codeNumber) {
 				itemShelf.setSoldOut(true);
 			}

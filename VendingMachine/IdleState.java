@@ -1,4 +1,4 @@
-package com.systemdesign.VendingMachine;
+package VendingMachine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +10,7 @@ public class IdleState implements State {
 	}
 
 	public IdleState(VendingMachine machine){
-		System.out.println("Currently Vending machine is in IdleState");
+		System.out.println("Currently Vending machines is in IdleState");
 		machine.setCoinList(new ArrayList<>());
 	}
 
@@ -20,14 +20,14 @@ public class IdleState implements State {
 	}
 
 	@Override
+	public void insertCoin(VendingMachine machine, Coin coin) throws Exception{
+		throw new Exception("you can not insert Coin in idle state");
+	}
+	
+	@Override
 	public void clickOnStartProductSelectionButton(VendingMachine machine) throws Exception {
 		throw new Exception("first you need to click on insert coin button");
 
-	}
-
-	@Override
-	public void insertCoin(VendingMachine machine, Coin coin) throws Exception{
-		throw new Exception("you can not insert Coin in idle state");
 	}
 
 	@Override

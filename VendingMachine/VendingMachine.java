@@ -1,4 +1,4 @@
-package com.systemdesign.VendingMachine;
+package VendingMachine;
 
 import java.util.ArrayList;
 import java.util.List;

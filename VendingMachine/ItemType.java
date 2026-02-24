@@ -1,9 +1,11 @@
-package com.systemdesign.VendingMachine;
+package VendingMachine;
 
 public enum ItemType {
 
-	COKE,
-	PEPSI,
 	JUICE,
-	SODA;
+	SODA,
+	WAFFERS,
+	CHOCLATE,
+	COKE,
+	PEPSI;
 }

@@ -1,4 +1,4 @@
-package com.systemdesign.VendingMachine;
+package VendingMachine;
 
 public class ItemShelf {
 

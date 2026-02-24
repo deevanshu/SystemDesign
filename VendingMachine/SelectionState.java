@@ -1,4 +1,4 @@
-package com.systemdesign.VendingMachine;
+package VendingMachine;
 
 import java.util.List;
 
@@ -14,15 +14,15 @@ public class SelectionState implements State {
 	}
 
 	@Override
-	public void clickOnStartProductSelectionButton(VendingMachine machine) throws Exception {
-		return;
-	}
-
-	@Override
 	public void insertCoin(VendingMachine machine, Coin coin) throws Exception{
 		throw new Exception("you can not insert Coin in selection state");
 	}
 
+	@Override
+	public void clickOnStartProductSelectionButton(VendingMachine machine) throws Exception {
+		return;
+	}
+	
 	@Override
 	public void chooseProduct(VendingMachine machine, int codeNumber) throws Exception{
 		//1. get item of this codeNumber

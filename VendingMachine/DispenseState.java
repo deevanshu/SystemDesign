@@ -1,4 +1,4 @@
-package com.systemdesign.VendingMachine;
+package VendingMachine;
 
 import java.util.List;
 
@@ -52,7 +52,7 @@ public class DispenseState implements State {
 
 	@Override
 	public void updateInventory(VendingMachine machine, Item item, int codeNumber) throws Exception {
-		throw new Exception("inventory can not be updated in Dispense state");
+		throw new Exception("itemShelf can not be updated in Dispense state");
 	}
 }
 

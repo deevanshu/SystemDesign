@@ -1,4 +1,4 @@
-package com.systemdesign.VendingMachine;
+package VendingMachine;
 
 import java.util.List;
 
@@ -12,16 +12,16 @@ public class HasMoneyState implements State {
 	public void clickOnInsertCoinButton(VendingMachine machine) throws Exception {
 		return;
 	}
-
-	@Override
-	public void clickOnStartProductSelectionButton(VendingMachine machine) throws Exception {
-		machine.setVendingMachineState(new SelectionState());
-	}
-
+	
 	@Override
 	public void insertCoin(VendingMachine machine, Coin coin) throws Exception {
 		System.out.println("Accepted the coin");
 		machine.getCoinList().add(coin);
+	}
+
+	@Override
+	public void clickOnStartProductSelectionButton(VendingMachine machine) throws Exception {
+		machine.setVendingMachineState(new SelectionState());
 	}
 
 	@Override
@@ -48,6 +48,6 @@ public class HasMoneyState implements State {
 
 	@Override
 	public void updateInventory(VendingMachine machine, Item item, int codeNumber) throws Exception {
-		throw new Exception("you can not update inventory in hasMoney  state");
+		throw new Exception("you can not update itemShelf in hasMoney  state");
 	}
 }

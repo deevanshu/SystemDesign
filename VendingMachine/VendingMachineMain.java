@@ -1,4 +1,4 @@
-package com.systemdesign.VendingMachine;
+package VendingMachine;
 public class VendingMachineMain {
 
 	public static void main(String args[]){
@@ -7,7 +7,7 @@ public class VendingMachineMain {
 		try {
 
 			System.out.println("|");
-			System.out.println("filling up the inventory");
+			System.out.println("filling up the itemShelf");
 			System.out.println("|");
 
 			fillUpInventory(vendingMachine);
@@ -41,7 +41,7 @@ public class VendingMachineMain {
 	}
 	
 	private static void fillUpInventory(VendingMachine vendingMachine){
-		ItemShelf[] slots = vendingMachine.getInventory().getInventory();
+		ItemShelf[] slots = vendingMachine.getInventory().getItemShelf();
 		for (int i = 0; i < slots.length; i++) {
 			Item newItem = new Item();
 			if(i >=0 && i<3) {
@@ -63,7 +63,7 @@ public class VendingMachineMain {
 
 	private static void displayInventory(VendingMachine vendingMachine){
 
-		ItemShelf[] slots = vendingMachine.getInventory().getInventory();
+		ItemShelf[] slots = vendingMachine.getInventory().getItemShelf();
 		for (int i = 0; i < slots.length; i++) {
 
 			System.out.println("CodeNumber: " + slots[i].getCode() +
