@@ -2,7 +2,7 @@ package NOTEPAD__LLD__WITH__LLIST;
 
 import java.util.List;
 
-public class NOTEPAD {
+public class NotePadApp {
     public static void main(String[] args) {
         List<String> lines = List.of(
             "Hello world!",
@@ -85,13 +85,12 @@ class Cursor {
 }
 
 class Notepad {
-    private LineNode head;
+    private LineNode head,tail;
     private Cursor cursor;
     private static final int PAGE_SIZE = 20; // assume visible lines per page
 
     public Notepad(List<String> lines) {
         // Build doubly linked list
-        LineNode tail = null;
         for (String line : lines) {
             LineNode node = new LineNode(line);
             if (head == null) head = node;
@@ -130,7 +129,7 @@ class Notepad {
     public void moveUp() {
         if (cursor.currentLine.prev != null) {
             cursor.currentLine = cursor.currentLine.prev;
-            cursor.columnPosition = Math.min(cursor.columnPosition, cursor.currentLine.text.length());
+            cursor.columnPosition = Math.min(cursor.columnPosition, cursor.currentLine.text.length()-1);
         }
     }
 
@@ -138,7 +137,7 @@ class Notepad {
     public void moveDown() {
         if (cursor.currentLine.next != null) {
             cursor.currentLine = cursor.currentLine.next;
-            cursor.columnPosition = Math.min(cursor.columnPosition, cursor.currentLine.text.length()); 
+            cursor.columnPosition = Math.min(cursor.columnPosition, cursor.currentLine.text.length()-1); 
         }
     }
 
