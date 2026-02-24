@@ -1,72 +1,227 @@
-package com.systemdesign.ParkingLot;
+package PARKING__LOT;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ParkingLot {
+public class ParkingLot { 
 
 	private String nameOfParkingLot;
 	private Address address;
-	private List<ParkingFloor> parkingFloors;
+	public List<ParkingFloor> parkingFloors;  // name ,  Map<ParkingSlotType, List<ParkingSlot>> parkingSlots , displayBoard
+	private PricingStrategy pricingStrategy;       // weekday  &  weekend
+	protected DisplayBoard displayBoard;           // single shared board for all the floors ,Map -> [ TwoWheeler-4 , COmpact - 3,  ....]
 
-	private static ParkingLot parkingLot=null; // for singleton instance
+	private static ParkingLot parkingLot = null; // singleton pattern
 
-	private  ParkingLot(String nameOfParkingLot, Address address, List<ParkingFloor> parkingFloors) {
+	private ParkingLot(String nameOfParkingLot, Address address, List<ParkingFloor> parkingFloors, PricingStrategy pricingStrategy) {
 		this.nameOfParkingLot = nameOfParkingLot;
 		this.address = address;
 		this.parkingFloors = parkingFloors;
-	}
+		this.pricingStrategy = pricingStrategy;
 
-	public static ParkingLot getInstance (String nameOfParkingLot, Address address, List<ParkingFloor> parkingFloors) {
-		if(parkingLot == null){
-			parkingLot = new ParkingLot(nameOfParkingLot,address,parkingFloors);
+		this.displayBoard = new DisplayBoard(ParkingLot.aggregateAllSlots(parkingFloors));
+		for (ParkingFloor floor : parkingFloors) {
+			floor.displayBoard = this.displayBoard;  // all flours point to same display board
+		}
+	}
+	public static ParkingLot getInstance(String nameOfParkingLot, Address address, List<ParkingFloor> parkingFloors, PricingStrategy strategy) {
+		if (parkingLot == null) {
+			parkingLot = new ParkingLot(nameOfParkingLot, address, parkingFloors, strategy);
 		}
 		return parkingLot;
 	}
-
-	public void addFloors(String name, Map<ParkingSlotType, Map<String,ParkingSlot>> parkSlots){
-		ParkingFloor parkingFloor = new ParkingFloor(name,parkSlots);
-		parkingFloors.add(parkingFloor);
-	}
-
-	public void removeFloors(ParkingFloor parkingFloor){
-		parkingFloors.remove(parkingFloor);
-	}
-
-	public Ticket assignTicket(Vehicle vehicle){
-
-		//to assign ticket we need parking slot for this vehicle
-
-		ParkingSlot parkingSlot = getParkingSlotForVehicleAndPark(vehicle);
-		if(parkingSlot == null) return null;
-		Ticket parkingTicket = createTicketForSlot(parkingSlot,vehicle);
-		//persist ticket to database
-		return parkingTicket;
-	}
-
-	private ParkingSlot getParkingSlotForVehicleAndPark(Vehicle vehicle) {
-		ParkingSlot parkingSlot=null;
-		for(ParkingFloor floor : parkingFloors){
-			parkingSlot = floor.getRelevantSlotForVehicleAndPark(vehicle);
-			if(parkingSlot!= null) break;
+	// helper to combine slots from all floors for initial board
+	private static Map<ParkingSlotType, List<ParkingSlot>> aggregateAllSlots(List<ParkingFloor> floors) {
+		Map<ParkingSlotType, List<ParkingSlot>> allSlots = new HashMap<>();
+		for (ParkingFloor floor : floors) {
+			for (Map.Entry<ParkingSlotType, List<ParkingSlot>> entry : floor.getParkingSlots().entrySet()) {
+				allSlots.putIfAbsent(entry.getKey(), new ArrayList<>());
+				allSlots.get(entry.getKey()).addAll(entry.getValue());
+			}
 		}
-
-		return parkingSlot;
+		return allSlots;
 	}
-
-	private Ticket createTicketForSlot(ParkingSlot parkingSlot, Vehicle vehicle) {
-		return Ticket.createTicket(vehicle,parkingSlot);
-	}
-
-	public double scanAndPay(Ticket ticket){
+	public double scanAndPay(Ticket ticket) {  // At the exit gate
 		long endTime = System.currentTimeMillis();
-		ticket.getParkingSlot().removeVehicle(ticket.getVehicle());
-		int duration = (int) (endTime-ticket.getStartTime())/1000;
-		double price = ticket.getParkingSlot().getParkingSlotType().getPriceForParking(duration);
-		//persist record to database
-		return price;
+		long duration = (endTime - ticket.getStartTime()) / 1000; // seconds
+		boolean removed = false;
+		for (ParkingFloor floor : parkingFloors) {
+			for (List<ParkingSlot> slots : floor.getParkingSlots().values()) {
+				if (slots.contains(ticket.getParkingSlot())) {
+					floor.removeVehicleFromSlot(ticket.getParkingSlot());
+					removed = true;
+					break;
+				}
+			}
+			 if (removed) break;
+		}
+		return pricingStrategy.calculatePrice(ticket.getParkingSlot().getParkingSlotType(), duration);
+	}
+
+	// Return all slots for DisplayBoard
+	public Map<ParkingSlotType, List<ParkingSlot>> getAllSlots() {
+		Map<ParkingSlotType, List<ParkingSlot>> allSlots = new HashMap<>();
+		for (ParkingFloor floor : parkingFloors) {
+			for (Map.Entry<ParkingSlotType, List<ParkingSlot>> entry : floor.getParkingSlots().entrySet()) {
+				allSlots.putIfAbsent(entry.getKey(), new ArrayList<>());
+				allSlots.get(entry.getKey()).addAll(entry.getValue());
+			}
+		}
+		return allSlots;
 	}
 }
 
+/* ===================== ENTRY & EXIT GATES ===================== */
+
+class EntranceGate { // To issue the parking ticket
+	String gateId;
+	ParkingLot parkingLot;
+
+	public EntranceGate(String gateId, ParkingLot lot) {
+		this.gateId = gateId;
+		this.parkingLot = lot;
+	}
+
+	public Ticket issueTicket(Vehicle vehicle) {
+		Ticket ticket = null ; 
+		for (ParkingFloor floor : parkingLot.parkingFloors) {
+			ParkingSlot slot = floor.getRelevantSlotForVehicleAndPark(vehicle);
+			if (slot != null) 
+				ticket = Ticket.createTicket(vehicle, slot);
+			    break; 
+		}
+		
+		if (ticket != null) {
+			System.out.println("🚗 " + vehicle.getVehicleCategory() 
+			+ " entered through Gate: " + gateId 
+			+ " | Ticket No: " + ticket.getTicketNumber());
+		} else {
+			System.out.println("❌ No slot available for vehicle " + vehicle.getVehicleNumber());
+		}
+		return ticket;
+	}
+}
+
+class ExitGate {
+	String gateId;
+	ParkingLot parkingLot;
+
+	public ExitGate(String gateId, ParkingLot lot) {
+		this.gateId = gateId;
+		this.parkingLot = lot;
+	}
+
+	public void processExit(Ticket ticket) {
+		if (ticket == null) {
+			System.out.println("⚠️ Invalid ticket — cannot process exit.");
+			return;
+		}
+		double price = parkingLot.scanAndPay(ticket);
+		System.out.println("💰 Payment of Rs. " + price + " processed at Exit Gate: " + gateId);
+	}
+}
+
+enum ParkingSlotType {
+	TwoWheeler{
+		public double getBaseRate(){
+			return 0.05;
+		}
+	},
+	Compact{  // Hatchback Type Vehicles 
+		public double getBaseRate(){
+			return 0.075;
+		}
+	},
+	Medium{ // SUV , Sedans  Type Vehicle
+		public double getBaseRate(){
+			return 0.09;
+		}
+	},
+	Large{  // Truck Type Vehicle
+		public double getBaseRate(){
+			return 0.10;
+		}
+	};
+	
+	public abstract double getBaseRate(); // can write methods at last only in enum
+}
+
+/* ===================== STRATEGY PATTERN For Pricing ===================== */
+
+interface PricingStrategy {
+	public double calculatePrice(ParkingSlotType slotType, long duration);
+}
+
+class RegularPricingStrategy implements PricingStrategy {
+	public double calculatePrice(ParkingSlotType slotType, long duration) {
+		return duration * slotType.getBaseRate();
+	}
+}
+
+class WeekendPricingStrategy implements PricingStrategy {
+	public double calculatePrice(ParkingSlotType slotType, long duration) {
+		return duration * slotType.getBaseRate() * 1.2; // 20% higher on weekends
+	}
+}
+
+/* ===================== DISPLAY BOARD ===================== */
+
+class DisplayBoard {    
+
+	Map<ParkingSlotType, Integer> availableSlots = new HashMap<>();
+
+	public DisplayBoard(Map<ParkingSlotType, List<ParkingSlot>> parkingSlots) {
+		for (Map.Entry<ParkingSlotType, List<ParkingSlot>> entry : parkingSlots.entrySet()) {
+			int availableCount = 0;
+			List<ParkingSlot> slots = entry.getValue();
+			for (ParkingSlot slot : slots) {
+				if (slot.isAvailable) {
+					availableCount++;
+				}
+			}
+			availableSlots.put(entry.getKey(), availableCount);
+		}
+	}
+	
+	public void update(ParkingSlotType type, boolean isFreed) {
+		availableSlots.put(type, availableSlots.get(type) + (isFreed ? 1 : -1)); // not freed(false) then decrease 1 spot for that SlotType
+	}
+	
+	public void showDisplay() {
+		System.out.println("📊 Display Board:");
+		for (Map.Entry<ParkingSlotType, Integer> entry : availableSlots.entrySet()) {
+			System.out.println(entry.getKey() + " → Available: " + entry.getValue());
+		}
+		System.out.print("-----------------------------------");
+	}
+}
+
+
+class Vehicle {
+
+	String vehicleNumber;
+	VehicleCategory vehicleCategory;
+
+	public Vehicle(String vehicleNumber, VehicleCategory vehicleCategory) {
+		this.vehicleNumber = vehicleNumber;
+		this.vehicleCategory = vehicleCategory;
+	}
+	public String getVehicleNumber() {
+		return vehicleNumber;
+	}
+	public VehicleCategory getVehicleCategory() {
+		return vehicleCategory;
+	}
+}
+
+enum VehicleCategory {
+	TwoWheeler,  // 2 wheeler slot type 
+	Hatchback,  // compact slot type
+	Sedan,     // medium   slot type
+	SUV,      // medium   slot type
+	Bus      // large   slot type
+} 
 class Address {
 	String street;
 	String block;
@@ -105,114 +260,3 @@ class Address {
 		this.country = country;
 	}
 }
-
-enum ParkingSlotType {
-	TwoWheeler{
-		public double getPriceForParking(long duration){
-			return duration*0.05;
-		}
-	},
-	Compact{
-		public double getPriceForParking(long duration){
-			return duration*0.075;
-		}
-	},
-	Medium{
-		public double getPriceForParking(long duration){
-			return duration*0.09;
-		}
-	},
-	Large{
-		public double getPriceForParking(long duration){
-			return duration*0.10;
-		}
-	};
-
-	public abstract double getPriceForParking(long duration);
-}
-
-class Ticket {
-	String ticketNumber;
-	long startTime;
-	long endTime;
-	Vehicle vehicle;
-	ParkingSlot parkingSlot;
-
-	public static Ticket createTicket(Vehicle vehicle,ParkingSlot parkingSlot){
-
-		Ticket ticket = new Ticket();
-		ticket.setParkingSlot(parkingSlot);
-		ticket.setStartTime(System.currentTimeMillis());
-		ticket.setVehicle(vehicle);
-		ticket.setTicketNumber(vehicle.getVehicleNumber()+System.currentTimeMillis());
-
-		return ticket;
-	}
-
-	public String getTicketNumber() {
-		return ticketNumber;
-	}
-
-	public void setTicketNumber(String ticketNumber) {
-		this.ticketNumber = ticketNumber;
-	}
-
-	public long getStartTime() {
-		return startTime;
-	}
-
-	public void setStartTime(long startTime) {
-		this.startTime = startTime;
-	}
-
-	public long getEndTime() {
-		return endTime;
-	}
-
-	public void setEndTime(long endTime) {
-		this.endTime = endTime;
-	}
-
-	public Vehicle getVehicle() {
-		return vehicle;
-	}
-
-	public void setVehicle(Vehicle vehicle) {
-		this.vehicle = vehicle;
-	}
-
-	public ParkingSlot getParkingSlot() {
-		return parkingSlot;
-	}
-
-	public void setParkingSlot(ParkingSlot parkingSlot) {
-		this.parkingSlot = parkingSlot;
-	}
-}
-
-class Vehicle {
-
-	String vehicleNumber;
-	VehicleCategory vehicleCategory;
-
-	public String getVehicleNumber() {
-		return vehicleNumber;
-	}
-	public void setVehicleNumber(String vehicleNumber) {
-		this.vehicleNumber = vehicleNumber;
-	}
-	public VehicleCategory getVehicleCategory() {
-		return vehicleCategory;
-	}
-	public void setVehicleCategory(VehicleCategory vehicleCategory) {
-		this.vehicleCategory = vehicleCategory;
-	}
-}
-
-enum VehicleCategory {
-	TwoWheeler, // 2 wheeler slot type 
-	Hatchback, // compact slot type
-	Sedan,     // medium   slot type
-	SUV,       // medium   slot type
-	Bus        // large   slot type
-} 

@@ -1,4 +1,4 @@
-package com.systemdesign.ParkingLot;
+package PARKING__LOT;
 
 public class ParkingSlot {
 
@@ -16,13 +16,15 @@ public class ParkingSlot {
 		this.vehicle = vehicle;
 		this.isAvailable=false;
 	}
-
-	protected void removeVehicle(Vehicle vehicle){
-		this.vehicle=null;
-		this.isAvailable=true;
+	
+	public void removeVehicle() {
+	    this.vehicle = null;
+	    this.isAvailable = true;
 	}
-
+	
 	public ParkingSlotType getParkingSlotType() {
 		return this.parkingSlotType;
 	}
+
+
 }

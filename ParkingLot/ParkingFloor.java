@@ -1,38 +1,58 @@
-package com.systemdesign.ParkingLot;
+package PARKING__LOT;
 
+import java.util.List;
 import java.util.Map;
 
 public class ParkingFloor {
     String name;
-    Map<ParkingSlotType,Map<String,ParkingSlot>> parkingSlots;
-    
-    public ParkingFloor(String name , Map<ParkingSlotType,Map<String,ParkingSlot>> parkingSlots) {
-        this.name=name;
+    Map<ParkingSlotType, List<ParkingSlot>> parkingSlots; // [Compact -> {C1 , C2 , C3}, Large -> {L1 , L2 , L3} ]
+    DisplayBoard displayBoard;
+
+    public ParkingFloor(String name, Map<ParkingSlotType, List<ParkingSlot>> parkingSlots) {
+        this.name = name;
         this.parkingSlots = parkingSlots;
     }
 
+    public void setDisplayBoard(DisplayBoard displayBoard) {
+        this.displayBoard = displayBoard;
+    }
+    
+    public Map<ParkingSlotType, List<ParkingSlot>> getParkingSlots() {
+        return parkingSlots;
+    }
+
     public ParkingSlot getRelevantSlotForVehicleAndPark(Vehicle vehicle) {
-        VehicleCategory vehicleCategory = vehicle.getVehicleCategory();
-        ParkingSlotType parkingSlotType = getParkingSlotType(vehicleCategory);
-        Map<String,ParkingSlot> relevantParkingSlot = parkingSlots.get(parkingSlotType);
-        ParkingSlot slot = null ;
-        for(Map.Entry<String,ParkingSlot> m : relevantParkingSlot.entrySet()){
-            if(m.getValue().isAvailable) {
-                slot = m.getValue();
+        VehicleCategory category = vehicle.getVehicleCategory();
+        ParkingSlotType slotType = getParkingSlotType(category);
+
+        List<ParkingSlot> slots = parkingSlots.get(slotType);
+        if (slots == null) return null;
+
+        for (ParkingSlot slot : slots) {
+            if (slot.isAvailable) {
                 slot.addVehicle(vehicle);
-                break;
+                displayBoard.update(slotType, false); // update board
+                displayBoard.showDisplay();
+                return slot;
             }
         }
+        return null;
+    }
 
-        return slot;
+    public void removeVehicleFromSlot(ParkingSlot slot) {
+        slot.removeVehicle();
+        displayBoard.update(slot.getParkingSlotType(), true); // update board
+        displayBoard.showDisplay();
     }
 
     private ParkingSlotType getParkingSlotType(VehicleCategory vehicleCategory) {
-        if(vehicleCategory.equals(VehicleCategory.TwoWheeler)) return ParkingSlotType.TwoWheeler;
-        else if(vehicleCategory.equals(VehicleCategory.Hatchback) ) return ParkingSlotType.Compact;
-        else if(vehicleCategory.equals(VehicleCategory.SUV) || vehicleCategory.equals(VehicleCategory.Sedan)) return ParkingSlotType.Medium;
-        else if(vehicleCategory.equals(VehicleCategory.Bus)) return ParkingSlotType.Large;
-
+        switch (vehicleCategory) {
+            case TwoWheeler: return ParkingSlotType.TwoWheeler;
+            case Hatchback: return ParkingSlotType.Compact;
+            case SUV: return ParkingSlotType.Medium;
+            case Sedan: return ParkingSlotType.Medium;
+            case Bus: return ParkingSlotType.Large;
+        }
         return null;
     }
 }
